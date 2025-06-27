@@ -47,5 +47,5 @@ func (uc *authUsecase) GenerateToken(userID int64) (string, error) {
 		"exp": time.Now().Add(time.Minute * 30).Unix(),
 	})
 
-	return token.SignedString([]byte(os.Getenv("JwtSecret")))
+	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 }
