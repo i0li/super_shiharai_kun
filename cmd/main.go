@@ -21,8 +21,12 @@ func main() {
 	userUc := usecase.NewUserUsecase(userRepo)
 	userHandler := handler.NewUserHandler(userUc)
 
+	authUc := usecase.NewAuthUsecase(userRepo)
+	authHandler := handler.NewAuthHandler(authUc)
+
 	r := gin.Default()
 	r.POST("/user", userHandler.RegisterUser)
+	r.POST("/auth/login", authHandler.Login)
 
 	port := os.Getenv("PORT")
 	if port == "" {

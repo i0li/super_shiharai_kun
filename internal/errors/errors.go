@@ -2,4 +2,7 @@ package errors
 
 import "errors"
 
-var ErrEmailAlreadyExists = errors.New("email already exist")
+var (
+	ErrUnauthorized       = errors.New("unouthorized")
+	ErrEmailAlreadyExists = errors.New("email already exist")
+)

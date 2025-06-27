@@ -27,7 +27,7 @@ type registerRequest struct {
 func (h *UserHandler) RegisterUser(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, appErr.ErrResponse{Error: appErr.ErrMsgBadRequest})
 		return
 	}
 
@@ -40,11 +40,11 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 
 	if err := h.usecase.RegisterUser(user); err != nil {
 		if err == appErr.ErrEmailAlreadyExists {
-			c.JSON(http.StatusBadRequest, gin.H{"error": appErr.ErrEmailAlreadyExists.Error()})
+			c.JSON(http.StatusBadRequest, appErr.ErrResponse{Error: appErr.ErrMsgBadRequest})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, appErr.ErrResponse{Error: appErr.ErrMsgInternalServerError})
 		return
 	}
 
