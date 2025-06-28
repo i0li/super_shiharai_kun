@@ -1,4 +1,4 @@
-package errors
+package apperr
 
 type ErrResponse struct {
 	Error string `json:"error"`

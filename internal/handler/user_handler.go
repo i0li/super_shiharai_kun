@@ -1,10 +1,11 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	appErr "github.com/i0li/super_shiharai_kun/internal/errors"
+	"github.com/i0li/super_shiharai_kun/internal/apperr"
 	"github.com/i0li/super_shiharai_kun/internal/model"
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
 )
@@ -27,7 +28,8 @@ type registerRequest struct {
 func (h *UserHandler) RegisterUser(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, appErr.ErrResponse{Error: appErr.ErrMsgBadRequest})
+		log.Error(apperr.Wrap(err).DetailMessage())
+		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
 		return
 	}
 
@@ -39,12 +41,14 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 	}
 
 	if err := h.usecase.RegisterUser(user); err != nil {
-		if err == appErr.ErrEmailAlreadyExists {
-			c.JSON(http.StatusBadRequest, appErr.ErrResponse{Error: appErr.ErrMsgBadRequest})
+		if errors.Is(err, apperr.ErrEmailAlreadyExists) {
+			log.Error(apperr.Wrap(err).DetailMessage())
+			c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, appErr.ErrResponse{Error: appErr.ErrMsgInternalServerError})
+		log.Error(apperr.Wrap(err).DetailMessage())
+		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
 		return
 	}
 

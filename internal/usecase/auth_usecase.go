@@ -1,13 +1,13 @@
 package usecase
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/cockroachdb/errors"
 	"github.com/golang-jwt/jwt/v5"
-	appErr "github.com/i0li/super_shiharai_kun/internal/errors"
+	"github.com/i0li/super_shiharai_kun/internal/apperr"
 	"github.com/i0li/super_shiharai_kun/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -29,13 +29,13 @@ func NewAuthUsecase(userRepo repository.UserRepository) AuthUsecase {
 func (uc *authUsecase) Login(email, password string) (int64, error) {
 	user, err := uc.userRepo.FindByEmail(email)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return 0, appErr.ErrUnauthorized
+		return 0, apperr.Wrap(apperr.ErrUnauthorized)
 	} else if err != nil {
-		return 0, err
+		return 0, apperr.Wrap(err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return 0, appErr.ErrUnauthorized
+		return 0, apperr.Wrap(apperr.ErrUnauthorized)
 	}
 
 	return user.ID, nil
@@ -47,5 +47,9 @@ func (uc *authUsecase) GenerateToken(userID int64) (string, error) {
 		"exp": time.Now().Add(time.Minute * 30).Unix(),
 	})
 
-	return token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		return "", apperr.Wrap(err)
+	}
+	return tokenString, nil
 }

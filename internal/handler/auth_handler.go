@@ -4,9 +4,12 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	appErr "github.com/i0li/super_shiharai_kun/internal/errors"
+	"github.com/i0li/super_shiharai_kun/internal/apperr"
+	"github.com/i0li/super_shiharai_kun/internal/logger"
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
 )
+
+var log = logger.NewLogger()
 
 type AuthHandler struct {
 	usecase usecase.AuthUsecase
@@ -27,24 +30,27 @@ type loginResponse struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, appErr.ErrResponse{Error: appErr.ErrMsgBadRequest})
+		log.Error(apperr.Wrap(err).DetailMessage())
+		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
 		return
 	}
 
 	userID, err := h.usecase.Login(req.Email, req.Password)
 	if err != nil {
-		if err == appErr.ErrUnauthorized {
-			c.JSON(http.StatusUnauthorized, appErr.ErrResponse{Error: appErr.ErrMsgUnauthorized})
+		if err == apperr.ErrUnauthorized {
+			c.JSON(http.StatusUnauthorized, apperr.ErrResponse{Error: apperr.ErrMsgUnauthorized})
 			return
 		}
 
-		c.JSON(http.StatusInternalServerError, appErr.ErrResponse{Error: appErr.ErrMsgInternalServerError})
+		log.Error(apperr.Wrap(err).DetailMessage())
+		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
 		return
 	}
 
 	token, err := h.usecase.GenerateToken(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, appErr.ErrResponse{Error: appErr.ErrMsgInternalServerError})
+		log.Error(apperr.Wrap(err).DetailMessage())
+		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
 		return
 	}
 

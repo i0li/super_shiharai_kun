@@ -1,10 +1,12 @@
 package usecase
 
 import (
-	appErr "github.com/i0li/super_shiharai_kun/internal/errors"
+	"github.com/cockroachdb/errors"
+	"github.com/i0li/super_shiharai_kun/internal/apperr"
 	"github.com/i0li/super_shiharai_kun/internal/model"
 	"github.com/i0li/super_shiharai_kun/internal/repository"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type UserUsecase interface {
@@ -20,13 +22,17 @@ func NewUserUsecase(repo repository.UserRepository) UserUsecase {
 }
 
 func (uc *userUsecase) RegisterUser(user *model.User) error {
-	if _, err := uc.repo.FindByEmail(user.Email); err == nil {
-		return appErr.ErrEmailAlreadyExists
+	_, err := uc.repo.FindByEmail(user.Email)
+	if err == nil {
+		return apperr.Wrap(apperr.ErrEmailAlreadyExists)
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return apperr.Wrap(err)
 	}
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return err
+		return apperr.Wrap(err)
 	}
 	user.Password = string(hashed)
 
