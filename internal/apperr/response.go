@@ -5,7 +5,9 @@ type ErrResponse struct {
 }
 
 const (
-	ErrMsgBadRequest          = "bad request"
-	ErrMsgUnauthorized        = "unauthorized"
-	ErrMsgInternalServerError = "internal server error"
+	ErrMsgBadRequest            = "bad request"
+	ErrMsgUnauthorized          = "unauthorized"
+	ErrMsgNoAuthorizationHeader = "authorization header is required"
+	ErrMsgInvalidToken          = "invalid token"
+	ErrMsgInternalServerError   = "internal server error"
 )

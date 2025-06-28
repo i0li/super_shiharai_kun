@@ -10,7 +10,7 @@ import (
 )
 
 type UserUsecase interface {
-	RegisterUser(user *model.User) error
+	RegisterUser(companyName, name, email, password string) error
 }
 
 type userUsecase struct {
@@ -21,8 +21,8 @@ func NewUserUsecase(repo repository.UserRepository) UserUsecase {
 	return &userUsecase{repo: repo}
 }
 
-func (uc *userUsecase) RegisterUser(user *model.User) error {
-	_, err := uc.repo.FindByEmail(user.Email)
+func (uc *userUsecase) RegisterUser(companyName, name, email, password string) error {
+	_, err := uc.repo.FindByEmail(email)
 	if err == nil {
 		return apperr.Wrap(apperr.ErrEmailAlreadyExists)
 	}
@@ -30,11 +30,18 @@ func (uc *userUsecase) RegisterUser(user *model.User) error {
 		return apperr.Wrap(err)
 	}
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return apperr.Wrap(err)
 	}
-	user.Password = string(hashed)
+	password = string(hashed)
+
+	user := &model.User{
+		CompanyName: companyName,
+		Name:        name,
+		Email:       email,
+		Password:    password,
+	}
 
 	return uc.repo.Create(user)
 }

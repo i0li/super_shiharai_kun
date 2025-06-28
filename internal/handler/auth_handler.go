@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/i0li/super_shiharai_kun/internal/apperr"
-	"github.com/i0li/super_shiharai_kun/internal/logger"
+	"github.com/i0li/super_shiharai_kun/internal/infra/logger"
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
 )
 
@@ -33,7 +33,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	userID, err := h.usecase.Login(req.Email, req.Password)
+	tokenStr, err := h.usecase.Login(req.Email, req.Password)
 	if err != nil {
 		if err == apperr.ErrUnauthorized {
 			c.JSON(http.StatusUnauthorized, apperr.ErrResponse{Error: apperr.ErrMsgUnauthorized})
@@ -45,12 +45,5 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := h.usecase.GenerateToken(userID)
-	if err != nil {
-		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
-		return
-	}
-
-	c.JSON(http.StatusOK, loginResponse{Token: token})
+	c.JSON(http.StatusOK, loginResponse{Token: tokenStr})
 }

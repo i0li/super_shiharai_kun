@@ -6,8 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/i0li/super_shiharai_kun/internal/apperr"
-	"github.com/i0li/super_shiharai_kun/internal/logger"
-	"github.com/i0li/super_shiharai_kun/internal/model"
+	"github.com/i0li/super_shiharai_kun/internal/infra/logger"
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
 )
 
@@ -34,14 +33,12 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	user := &model.User{
-		CompanyName: req.CompanyName,
-		Name:        req.Name,
-		Email:       req.Email,
-		Password:    req.Password,
-	}
-
-	if err := h.usecase.RegisterUser(user); err != nil {
+	if err := h.usecase.RegisterUser(
+		req.CompanyName,
+		req.Name,
+		req.Email,
+		req.Password,
+	); err != nil {
 		if errors.Is(err, apperr.ErrEmailAlreadyExists) {
 			logger.L.Error(apperr.Wrap(err).DetailMessage())
 			c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
