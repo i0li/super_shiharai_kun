@@ -9,8 +9,6 @@ import (
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
 )
 
-var log = logger.NewLogger()
-
 type AuthHandler struct {
 	usecase usecase.AuthUsecase
 }
@@ -30,7 +28,7 @@ type loginResponse struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Error(apperr.Wrap(err).DetailMessage())
+		logger.L.Error(apperr.Wrap(err).DetailMessage())
 		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
 		return
 	}
@@ -42,14 +40,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			return
 		}
 
-		log.Error(apperr.Wrap(err).DetailMessage())
+		logger.L.Error(apperr.Wrap(err).DetailMessage())
 		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
 		return
 	}
 
 	token, err := h.usecase.GenerateToken(userID)
 	if err != nil {
-		log.Error(apperr.Wrap(err).DetailMessage())
+		logger.L.Error(apperr.Wrap(err).DetailMessage())
 		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
 		return
 	}

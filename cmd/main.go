@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/i0li/super_shiharai_kun/internal/apperr"
 	"github.com/i0li/super_shiharai_kun/internal/db"
 	"github.com/i0li/super_shiharai_kun/internal/handler"
 	"github.com/i0li/super_shiharai_kun/internal/logger"
@@ -12,11 +13,9 @@ import (
 )
 
 func main() {
-	logger.L = logger.NewLogger()
-
 	conn, err := db.NewGormPostgres()
 	if err != nil {
-		logger.L.Error(err.Error())
+		logger.L.Error(apperr.Wrap(err).DetailMessage())
 	}
 
 	userRepo := repository.NewUserRepository(conn)

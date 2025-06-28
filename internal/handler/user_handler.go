@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/i0li/super_shiharai_kun/internal/apperr"
+	"github.com/i0li/super_shiharai_kun/internal/logger"
 	"github.com/i0li/super_shiharai_kun/internal/model"
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
 )
@@ -28,7 +29,7 @@ type registerRequest struct {
 func (h *UserHandler) RegisterUser(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Error(apperr.Wrap(err).DetailMessage())
+		logger.L.Error(apperr.Wrap(err).DetailMessage())
 		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
 		return
 	}
@@ -42,12 +43,12 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 
 	if err := h.usecase.RegisterUser(user); err != nil {
 		if errors.Is(err, apperr.ErrEmailAlreadyExists) {
-			log.Error(apperr.Wrap(err).DetailMessage())
+			logger.L.Error(apperr.Wrap(err).DetailMessage())
 			c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
 			return
 		}
 
-		log.Error(apperr.Wrap(err).DetailMessage())
+		logger.L.Error(apperr.Wrap(err).DetailMessage())
 		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
 		return
 	}

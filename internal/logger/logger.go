@@ -5,7 +5,7 @@ import (
 	"os"
 )
 
-var L Logger
+var L = NewLogger()
 
 type Logger interface {
 	Info(message string)
