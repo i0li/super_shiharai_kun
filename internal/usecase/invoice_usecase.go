@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/i0li/super_shiharai_kun/internal/apperr"
-	"github.com/i0li/super_shiharai_kun/internal/model"
+	"github.com/i0li/super_shiharai_kun/internal/domain"
 	"github.com/i0li/super_shiharai_kun/internal/repository"
 	"github.com/shopspring/decimal"
 )
@@ -15,7 +15,16 @@ var (
 )
 
 type InvoiceUsecase interface {
-	Create(userID int64, paymentAmount decimal.Decimal, paymentDueDate time.Time) (int64, error)
+	Create(
+		userID int64,
+		paymentAmount decimal.Decimal,
+		paymentDueDate time.Time,
+	) (int64, error)
+
+	FindPayableInvoicesInPeriod(
+		userID int64,
+		startDate, endDate time.Time,
+	) ([]*domain.Invoice, error)
 }
 
 type invoiceUsecase struct {
@@ -27,11 +36,9 @@ func NewInvoiceUsecase(invoiceRepo repository.InvoiceRepository) InvoiceUsecase 
 }
 
 func (uc *invoiceUsecase) Create(userID int64, paymentAmount decimal.Decimal, paymentDueDate time.Time) (int64, error) {
-	jst, _ := time.LoadLocation("Asia/Tokyo")
-
-	invoice := &model.Invoice{
+	invoice := &domain.Invoice{
 		UserID:         userID,
-		IssueDate:      time.Now().In(jst),
+		IssueDate:      time.Now(),
 		PaymentAmount:  paymentAmount,
 		Fee:            decimal.Zero,
 		FeeRate:        InvoiceFeeRate,
@@ -47,4 +54,16 @@ func (uc *invoiceUsecase) Create(userID int64, paymentAmount decimal.Decimal, pa
 	}
 
 	return invoice.ID, nil
+}
+
+func (uc *invoiceUsecase) FindPayableInvoicesInPeriod(
+	userID int64,
+	startDate, endDate time.Time,
+) ([]*domain.Invoice, error) {
+	invoices, err := uc.repo.FindByPaymentDueDatePeriod(userID, startDate, endDate)
+	if err != nil {
+		return nil, apperr.Wrap(err)
+	}
+
+	return invoices, nil
 }

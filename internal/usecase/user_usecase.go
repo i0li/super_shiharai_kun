@@ -3,7 +3,7 @@ package usecase
 import (
 	"github.com/cockroachdb/errors"
 	"github.com/i0li/super_shiharai_kun/internal/apperr"
-	"github.com/i0li/super_shiharai_kun/internal/model"
+	"github.com/i0li/super_shiharai_kun/internal/domain"
 	"github.com/i0li/super_shiharai_kun/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -36,7 +36,7 @@ func (uc *userUsecase) RegisterUser(companyName, name, email, password string) e
 	}
 	password = string(hashed)
 
-	user := &model.User{
+	user := &domain.User{
 		CompanyName: companyName,
 		Name:        name,
 		Email:       email,

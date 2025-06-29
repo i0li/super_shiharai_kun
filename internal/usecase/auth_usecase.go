@@ -3,10 +3,11 @@ package usecase
 import (
 	"github.com/cockroachdb/errors"
 	"github.com/i0li/super_shiharai_kun/internal/apperr"
-	"github.com/i0li/super_shiharai_kun/internal/auth/jwt"
 	"github.com/i0li/super_shiharai_kun/internal/repository"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
+
+	jwtUtil "github.com/i0li/super_shiharai_kun/internal/util"
 )
 
 type AuthUsecase interface {
@@ -33,7 +34,7 @@ func (uc *authUsecase) Login(email, password string) (string, error) {
 		return "", apperr.Wrap(apperr.ErrUnauthorized)
 	}
 
-	tokenStr, err := jwt.GenerateToken(user.ID)
+	tokenStr, err := jwtUtil.GenerateToken(user.ID)
 	if err != nil {
 		return "", apperr.Wrap(err)
 	}

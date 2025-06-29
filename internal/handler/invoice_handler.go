@@ -1,14 +1,15 @@
 package handler
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/i0li/super_shiharai_kun/internal/apperr"
 	"github.com/i0li/super_shiharai_kun/internal/infra/logger"
-	"github.com/i0li/super_shiharai_kun/internal/types"
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
+	"github.com/i0li/super_shiharai_kun/internal/util"
 	"github.com/shopspring/decimal"
 )
 
@@ -22,22 +23,16 @@ func NewInvoiceHandler(uc usecase.InvoiceUsecase) *InvoiceHandler {
 
 type createRequest struct {
 	PaymentAmount  decimal.Decimal `json:"payment_amount" binding:"required"`
-	PaymentDueDate types.Date      `json:"payment_due_date" binding:"required"`
+	PaymentDueDate string          `json:"payment_due_date" binding:"required"`
 }
 type createResponse struct {
 	InvoiceID int64 `json:"invoice_id"`
 }
 
 func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
-	userIDVal, exists := c.Get("userID")
-	if !exists {
-		logger.L.Error(apperr.Wrap(errors.New("userID not found from context")).DetailMessage())
-		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
-		return
-	}
-	userID, ok := userIDVal.(int64)
-	if !ok {
-		logger.L.Error(apperr.Wrap(errors.New("failed to convert context's userID")).DetailMessage())
+	userID, err := util.GetUserID(c)
+	if err != nil {
+		logger.L.Error(apperr.Wrap(err).DetailMessage())
 		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
 		return
 	}
@@ -49,7 +44,13 @@ func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
 		return
 	}
 
-	invoiceID, err := h.usecase.Create(userID, req.PaymentAmount, req.PaymentDueDate.Time)
+	paymentDueDate, err := time.Parse("2006-01-02", req.PaymentDueDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		return
+	}
+
+	invoiceID, err := h.usecase.Create(userID, req.PaymentAmount, paymentDueDate)
 	if err != nil {
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
 		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
@@ -57,4 +58,78 @@ func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, createResponse{InvoiceID: invoiceID})
+}
+
+type FindPayableInvoicesInPeriodRequest struct {
+	StartDate string `form:"start_date" binding:"required"`
+	EndDate   string `form:"end_date" binding:"required"`
+}
+type FindPayableInvoicesInPeriodResponse struct {
+	Invoices []InvoiceItem `json:"invoices"`
+}
+type InvoiceItem struct {
+	ID             int64           `json:"id"`
+	IssueDate      string          `json:"issue_date"`
+	PaymentAmount  decimal.Decimal `json:"payment_amount"`
+	Fee            decimal.Decimal `json:"fee"`
+	FeeRate        decimal.Decimal `json:"fee_rate"`
+	TaxAmount      decimal.Decimal `json:"tax_amount"`
+	TaxRate        decimal.Decimal `json:"tax_rate"`
+	TotalAmount    decimal.Decimal `json:"total_amount"`
+	PaymentDueDate string          `json:"payment_due_date"`
+}
+
+func (h *InvoiceHandler) FindPayableInvoicesInPeriod(c *gin.Context) {
+	userID, err := util.GetUserID(c)
+	if err != nil {
+		logger.L.Error(apperr.Wrap(err).DetailMessage())
+		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
+		return
+	}
+
+	var req FindPayableInvoicesInPeriodRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		logger.L.Debug(apperr.Wrap(err).DetailMessage())
+		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		return
+	}
+
+	jst, _ := time.LoadLocation("Asia/Tokyo")
+	startDate, err := time.ParseInLocation("2006-01-02", req.StartDate, jst)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		return
+	}
+	endDate, err := time.ParseInLocation("2006-01-02", req.EndDate, jst)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		return
+	}
+	logger.L.Debug(fmt.Sprintf("startDate:%s \n endDate:%s", startDate, endDate))
+
+	invoices, err := h.usecase.FindPayableInvoicesInPeriod(userID, startDate, endDate)
+	if err != nil {
+		logger.L.Error(apperr.Wrap(err).DetailMessage())
+		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
+		return
+	}
+
+	var invoiceItems []InvoiceItem
+	for _, invoice := range invoices {
+		invoiceItems = append(invoiceItems, InvoiceItem{
+			ID:             invoice.ID,
+			IssueDate:      invoice.IssueDate.Format("2006-01-02"),
+			PaymentAmount:  invoice.PaymentAmount,
+			Fee:            invoice.Fee,
+			FeeRate:        invoice.FeeRate,
+			TaxAmount:      invoice.TaxAmount,
+			TaxRate:        invoice.TaxRate,
+			TotalAmount:    invoice.TotalAmount,
+			PaymentDueDate: invoice.PaymentDueDate.Format("2006-01-02"),
+		})
+	}
+
+	c.JSON(http.StatusOK, FindPayableInvoicesInPeriodResponse{
+		Invoices: invoiceItems,
+	})
 }
