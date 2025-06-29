@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/i0li/super_shiharai_kun/internal/apperr"
 	"github.com/i0li/super_shiharai_kun/internal/infra/logger"
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
@@ -62,9 +64,12 @@ func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
 type FindPayableInvoicesInPeriodRequest struct {
 	StartDate string `form:"start_date" binding:"required"`
 	EndDate   string `form:"end_date" binding:"required"`
+	Limit     int    `form:"limit" binding:"omitempty,min=1,max=100"`
+	Offset    int    `form:"offset" binding:"omitempty,min=0"`
 }
 type FindPayableInvoicesInPeriodResponse struct {
-	Invoices []InvoiceItem `json:"invoices"`
+	Data       []InvoiceItem `json:"data"`
+	Pagination Pagination    `json:"pagination"`
 }
 type InvoiceItem struct {
 	ID             int64           `json:"id"`
@@ -77,6 +82,11 @@ type InvoiceItem struct {
 	TotalAmount    decimal.Decimal `json:"total_amount"`
 	PaymentDueDate string          `json:"payment_due_date"`
 }
+type Pagination struct {
+	Limit  int   `json:"limit"`
+	Offset int   `json:"offset"`
+	Total  int64 `json:"total"`
+}
 
 func (h *InvoiceHandler) FindPayableInvoicesInPeriod(c *gin.Context) {
 	userID, err := util.GetUserID(c)
@@ -88,6 +98,15 @@ func (h *InvoiceHandler) FindPayableInvoicesInPeriod(c *gin.Context) {
 
 	var req FindPayableInvoicesInPeriodRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
+		var validationErr validator.ValidationErrors
+		if errors.As(err, &validationErr) {
+			msg := genPayableInvoicesPeriodValMsg(validationErr)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": msg,
+			})
+			return
+		}
+
 		c.JSON(apperr.ErrResBadRequest.Code, apperr.ErrResBadRequest)
 		return
 	}
@@ -103,14 +122,25 @@ func (h *InvoiceHandler) FindPayableInvoicesInPeriod(c *gin.Context) {
 		return
 	}
 
-	invoices, err := h.usecase.FindPayableInvoicesInPeriod(userID, startDate, endDate)
+	// default limit
+	if req.Limit == 0 {
+		req.Limit = 10
+	}
+
+	invoices, pagination, err := h.usecase.FindPayableInvoicesInPeriod(
+		userID,
+		startDate,
+		endDate,
+		req.Limit,
+		req.Offset,
+	)
 	if err != nil {
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
 		c.JSON(apperr.ErrResInternalServerError.Code, apperr.ErrResInternalServerError)
 		return
 	}
 
-	var invoiceItems []InvoiceItem
+	invoiceItems := make([]InvoiceItem, 0)
 	for _, invoice := range invoices {
 		invoiceItems = append(invoiceItems, InvoiceItem{
 			ID:             invoice.ID,
@@ -126,6 +156,27 @@ func (h *InvoiceHandler) FindPayableInvoicesInPeriod(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, FindPayableInvoicesInPeriodResponse{
-		Invoices: invoiceItems,
+		Data: invoiceItems,
+		Pagination: Pagination{
+			Limit:  pagination.Limit,
+			Offset: pagination.Offset,
+			Total:  pagination.Total,
+		},
 	})
+}
+
+func genPayableInvoicesPeriodValMsg(errs validator.ValidationErrors) string {
+	for _, err := range errs {
+		switch err.Field() {
+		case "Limit":
+			if err.Tag() == "min" || err.Tag() == "max" {
+				return "limit must be between 1 and 100"
+			}
+		case "Offset":
+			if err.Tag() == "min" {
+				return "offset must be at least 0"
+			}
+		}
+	}
+	return "invalid request parameters"
 }

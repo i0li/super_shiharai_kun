@@ -13,7 +13,13 @@ type InvoiceRepository interface {
 	FindByPaymentDueDatePeriod(
 		userID int64,
 		startDate, endDate time.Time,
+		limit int,
+		offset int,
 	) ([]*domain.Invoice, error)
+	CountByPaymentDueDatePeriod(
+		userID int64,
+		startDate, endDate time.Time,
+	) (int64, error)
 }
 
 type invoiceRepository struct {
@@ -34,16 +40,37 @@ func (r *invoiceRepository) Create(invoice *domain.Invoice) error {
 func (r *invoiceRepository) FindByPaymentDueDatePeriod(
 	userID int64,
 	startDate, endDate time.Time,
+	limit int,
+	offset int,
 ) ([]*domain.Invoice, error) {
 	var invoices []*domain.Invoice
 	err := r.db.
 		Where("user_id = ?", userID).
 		Where("payment_due_date BETWEEN ? AND ?", startDate, endDate).
 		Order("payment_due_date DESC").
+		Limit(limit).
+		Offset(offset).
 		Find(&invoices).Error
 	if err != nil {
 		return nil, apperr.Wrap(err)
 	}
 
 	return invoices, nil
+}
+
+func (r *invoiceRepository) CountByPaymentDueDatePeriod(
+	userID int64,
+	startDate, endDate time.Time,
+) (int64, error) {
+	var total int64
+	err := r.db.
+		Model(&domain.Invoice{}).
+		Where("user_id = ?", userID).
+		Where("payment_due_date BETWEEN ? AND ?", startDate, endDate).
+		Count(&total).Error
+	if err != nil {
+		return 0, apperr.Wrap(err)
+	}
+
+	return total, nil
 }
