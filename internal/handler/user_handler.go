@@ -29,7 +29,7 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		c.JSON(apperr.ErrResBadRequest.Code, apperr.ErrResBadRequest)
 		return
 	}
 
@@ -41,12 +41,12 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 	); err != nil {
 		if errors.Is(err, apperr.ErrEmailAlreadyExists) {
 			logger.L.Error(apperr.Wrap(err).DetailMessage())
-			c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+			c.JSON(apperr.ErrResBadRequest.Code, apperr.ErrResBadRequest)
 			return
 		}
 
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
+		c.JSON(apperr.ErrResInternalServerError.Code, apperr.ErrResInternalServerError)
 		return
 	}
 

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -33,27 +32,27 @@ func (h *InvoiceHandler) CreateInvoice(c *gin.Context) {
 	userID, err := util.GetUserID(c)
 	if err != nil {
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
+		c.JSON(apperr.ErrResInternalServerError.Code, apperr.ErrResInternalServerError)
 		return
 	}
 
 	var req createRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		c.JSON(apperr.ErrResBadRequest.Code, apperr.ErrResBadRequest)
 		return
 	}
 
 	paymentDueDate, err := time.Parse("2006-01-02", req.PaymentDueDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		c.JSON(apperr.ErrResBadRequest.Code, apperr.ErrResBadRequest)
 		return
 	}
 
 	invoiceID, err := h.usecase.Create(userID, req.PaymentAmount, paymentDueDate)
 	if err != nil {
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
+		c.JSON(apperr.ErrResInternalServerError.Code, apperr.ErrResInternalServerError)
 		return
 	}
 
@@ -83,34 +82,31 @@ func (h *InvoiceHandler) FindPayableInvoicesInPeriod(c *gin.Context) {
 	userID, err := util.GetUserID(c)
 	if err != nil {
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
+		c.JSON(apperr.ErrResInternalServerError.Code, apperr.ErrResInternalServerError)
 		return
 	}
 
 	var req FindPayableInvoicesInPeriodRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		logger.L.Debug(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		c.JSON(apperr.ErrResBadRequest.Code, apperr.ErrResBadRequest)
 		return
 	}
 
-	jst, _ := time.LoadLocation("Asia/Tokyo")
-	startDate, err := time.ParseInLocation("2006-01-02", req.StartDate, jst)
+	startDate, err := time.Parse("2006-01-02", req.StartDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		c.JSON(apperr.ErrResBadRequest.Code, apperr.ErrResBadRequest)
 		return
 	}
-	endDate, err := time.ParseInLocation("2006-01-02", req.EndDate, jst)
+	endDate, err := time.Parse("2006-01-02", req.EndDate)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		c.JSON(apperr.ErrResBadRequest.Code, apperr.ErrResBadRequest)
 		return
 	}
-	logger.L.Debug(fmt.Sprintf("startDate:%s \n endDate:%s", startDate, endDate))
 
 	invoices, err := h.usecase.FindPayableInvoicesInPeriod(userID, startDate, endDate)
 	if err != nil {
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
+		c.JSON(apperr.ErrResInternalServerError.Code, apperr.ErrResInternalServerError)
 		return
 	}
 

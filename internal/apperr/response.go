@@ -1,13 +1,31 @@
 package apperr
 
-type ErrResponse struct {
-	Error string `json:"error"`
+import "net/http"
+
+type ErrorResponse struct {
+	Code    int    `json:"-"`
+	Message string `json:"error"`
 }
 
-const (
-	ErrMsgBadRequest            = "bad request"
-	ErrMsgUnauthorized          = "unauthorized"
-	ErrMsgNoAuthorizationHeader = "authorization header is required"
-	ErrMsgInvalidToken          = "invalid token"
-	ErrMsgInternalServerError   = "internal server error"
+var (
+	ErrResBadRequest = &ErrorResponse{
+		Code:    http.StatusBadRequest,
+		Message: "Bad request",
+	}
+	ErrResInternalServerError = &ErrorResponse{
+		Code:    http.StatusInternalServerError,
+		Message: "Internal server error",
+	}
+	ErrResUnauthorized = &ErrorResponse{
+		Code:    http.StatusUnauthorized,
+		Message: "Unauthorized",
+	}
+	ErrResRequireAuthHeader = &ErrorResponse{
+		Code:    http.StatusUnauthorized,
+		Message: "authorization header is required",
+	}
+	ErrResInvalidToken = &ErrorResponse{
+		Code:    http.StatusUnauthorized,
+		Message: "invalid token",
+	}
 )

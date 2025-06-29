@@ -29,19 +29,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusBadRequest, apperr.ErrResponse{Error: apperr.ErrMsgBadRequest})
+		c.JSON(apperr.ErrResBadRequest.Code, apperr.ErrResBadRequest)
 		return
 	}
 
 	tokenStr, err := h.usecase.Login(req.Email, req.Password)
 	if err != nil {
 		if err == apperr.ErrUnauthorized {
-			c.JSON(http.StatusUnauthorized, apperr.ErrResponse{Error: apperr.ErrMsgUnauthorized})
+			c.JSON(apperr.ErrResUnauthorized.Code, apperr.ErrResUnauthorized)
 			return
 		}
 
 		logger.L.Error(apperr.Wrap(err).DetailMessage())
-		c.JSON(http.StatusInternalServerError, apperr.ErrResponse{Error: apperr.ErrMsgInternalServerError})
+		c.JSON(apperr.ErrResInternalServerError.Code, apperr.ErrResInternalServerError)
 		return
 	}
 

@@ -16,12 +16,11 @@ type Handlers struct {
 
 func NewHandler(db *gorm.DB) *Handlers {
 	userRepo := repository.NewUserRepository(db)
+	invoiceRepo := repository.NewInvoiceRepository(db)
 
 	return &Handlers{
-		User: handler.NewUserHandler(usecase.NewUserUsecase(userRepo)),
-		Auth: handler.NewAuthHandler(usecase.NewAuthUsecase(userRepo)),
-		Invoice: handler.NewInvoiceHandler(
-			usecase.NewInvoiceUsecase(repository.NewInvoiceRepository(db)),
-		),
+		User:    handler.NewUserHandler(usecase.NewUserUsecase(userRepo)),
+		Auth:    handler.NewAuthHandler(usecase.NewAuthUsecase(userRepo)),
+		Invoice: handler.NewInvoiceHandler(usecase.NewInvoiceUsecase(invoiceRepo)),
 	}
 }
