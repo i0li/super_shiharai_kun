@@ -9,7 +9,7 @@ info:
   version: 1.0.0
 
 paths:
-  /user:
+  /users:
     post:
       summary: register new user
       description: ユーザー情報を登録（既に同じメールアドレスが登録済みの場合はエラー）
