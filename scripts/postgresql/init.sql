@@ -1,5 +1,5 @@
 -- ユーザーテーブル
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY, -- ユーザーID
     company_name VARCHAR(255) NOT NULL, -- 企業名
     name VARCHAR(255) NOT NULL, -- 氏名
@@ -10,7 +10,7 @@ CREATE TABLE users (
 );
 
 -- 請求書テーブル
-CREATE TABLE invoices (
+CREATE TABLE IF NOT EXISTS invoices (
     id SERIAL PRIMARY KEY, -- 請求書ID
     user_id INT REFERENCES users(id) ON DELETE CASCADE, -- 企業ID
     issue_date DATE NOT NULL, -- 発行日
