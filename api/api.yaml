@@ -1,0 +1,339 @@
+openapi: 3.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: localhost
+
+info:
+  title: スーパー支払い君 API
+  version: 1.0.0
+
+paths:
+  /user:
+    post:
+      summary: register new user
+      description: ユーザー情報を登録（既に同じメールアドレスが登録済みの場合はエラー）
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - company_name
+                - name
+                - email
+                - password
+              properties:
+                company_name:
+                  type: string
+                  example: Sample Inc.
+                name:
+                  type: string
+                  example: Taro Yamada
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: secret123
+      responses:
+        '204':
+          description: ユーザー登録成功。レスポンスボディなし。
+        '400':
+          description: バリデーションエラー、または既に存在するメールアドレス
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequestResponse'
+        '500':
+          description: サーバー内部エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServerErrorResponse'
+  /auth/login:
+    post:
+      summary: User login
+      description: ログイン情報（メールアドレスとパスワード）を受け取り、JWTトークンを返す。
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: test@example.com
+                password:
+                  type: string
+                  format: password
+                  example: password123
+      responses:
+        '200':
+          description: 正常にログイン成功し、JWTトークンを返す
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '400':
+          description: リクエスト形式のエラー（バリデーション失敗）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequestResponse'
+        '401':
+          description: 認証失敗（メールアドレスまたはパスワードが間違っている）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorUnauthorizedResponse'
+        '500':
+          description: サーバー内部エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServerErrorResponse'
+  /invoices:
+    post:
+      summary: create invoice
+      description: 支払金額・支払期限を受け取り、請求書を作成（請求金額は自動計算）
+      tags:
+        - Invoices
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - payment_amount
+                - payment_due_date
+              properties:
+                payment_amount:
+                  type: string
+                  example: "10000.00"
+                  description: 支払金額（Decimal文字列）
+                payment_due_date:
+                  type: string
+                  format: date
+                  example: "2025-07-15"
+                  description: 支払期日（YYYY-MM-DD）
+      responses:
+        '200':
+          description: 請求書作成成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoice_id:
+                    type: integer
+                    example: 123
+        '400':
+          description: バリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequestResponse'
+        '401':
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorUnauthorizedResponse'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServerErrorResponse'
+
+    get:
+      summary: List payable invoices by payment period
+      description: 指定された期間内の支払期日をもつ請求書を一覧で取得。
+      tags:
+        - Invoices
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: start_date
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-07-01"
+          description: 検索開始日（YYYY-MM-DD）
+        - in: query
+          name: end_date
+          required: true
+          schema:
+            type: string
+            format: date
+            example: "2025-07-31"
+          description: 検索終了日（YYYY-MM-DD）
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            example: 10
+          description: 最大取得件数（1〜100）
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            example: 0
+          description: オフセット（0以上）
+      responses:
+        '200':
+          description: 該当する請求書の一覧
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceItem'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: クエリパラメータのバリデーションエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBadRequestResponse'
+        '401':
+          description: 認証エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorUnauthorizedResponse'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorInternalServerErrorResponse'
+
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ErrorBadRequestResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Bad Request
+    ErrorUnauthorizedResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Unauthorized
+    ErrorInternalServerErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Internal server error
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    InvoiceItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        issue_date:
+          type: string
+          format: date
+          example: "2025-06-30"
+        payment_amount:
+          type: string
+          example: "10000.00"
+        fee:
+          type: string
+          example: "400.00"
+        fee_rate:
+          type: string
+          example: "0.04"
+        tax_amount:
+          type: string
+          example: "40.00"
+        tax_rate:
+          type: string
+          example: "0.10"
+        total_amount:
+          type: string
+          example: "10440.00"
+        payment_due_date:
+          type: string
+          format: date
+          example: "2025-07-15"
+
+    Pagination:
+      type: object
+      properties:
+        limit:
+          type: integer
+          example: 10
+        offset:
+          type: integer
+          example: 0
+        total:
+          type: integer
+          example: 2
+
+    CreateInvoiceResponse:
+      type: object
+      properties:
+        invoice_id:
+          type: integer
+          example: 123
+
