@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -35,7 +36,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	tokenStr, err := h.usecase.Login(req.Email, req.Password)
 	if err != nil {
-		if err == apperr.ErrUnauthorized {
+		if errors.Is(err, apperr.ErrUnauthorized) {
 			c.JSON(apperr.ErrResUnauthorized.Code, apperr.ErrResUnauthorized)
 			return
 		}

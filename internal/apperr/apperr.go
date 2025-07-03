@@ -39,6 +39,10 @@ func Wrap(err error) *AppError {
 	}
 }
 
+func (e *AppError) Unwrap() error {
+	return e.Err
+}
+
 func (e *AppError) DetailMessage() string {
 	var sBuilder strings.Builder
 	sBuilder.WriteString(e.Error())
