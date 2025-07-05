@@ -166,6 +166,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorInternalServerErrorResponse'
 
+  /invoices/payable:
     get:
       summary: List payable invoices by payment period
       description: 指定された期間内の支払期日をもつ請求書を一覧で取得。
