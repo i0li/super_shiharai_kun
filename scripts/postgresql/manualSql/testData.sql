@@ -1,3 +1,6 @@
+-- ※ ユーザーを少なくとも1名は作成している必要がある
+
+-- 10万件のテスト請求書データ作成
 INSERT INTO public.invoices (
   user_id,
   issue_date,
@@ -12,7 +15,7 @@ INSERT INTO public.invoices (
   updated_at
 )
 SELECT
-  2,
+  1,
   CURRENT_DATE - (i % 365), -- 最大1年前
   10000,
   500,

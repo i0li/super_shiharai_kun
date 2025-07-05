@@ -19,4 +19,4 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - .scripts/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+       - ./scripts/postgresql/init:/docker-entrypoint-initdb.d
