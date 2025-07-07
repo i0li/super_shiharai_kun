@@ -7,8 +7,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/i0li/super_shiharai_kun/internal/domain"
 	mockrepo "github.com/i0li/super_shiharai_kun/internal/repository/mocks"
+	"github.com/i0li/super_shiharai_kun/internal/testdata"
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
-	"github.com/i0li/super_shiharai_kun/testdata"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 )

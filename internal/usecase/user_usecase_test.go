@@ -5,8 +5,8 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/i0li/super_shiharai_kun/internal/apperr"
-	"github.com/i0li/super_shiharai_kun/internal/domain"
 	mockrepo "github.com/i0li/super_shiharai_kun/internal/repository/mocks"
+	"github.com/i0li/super_shiharai_kun/internal/testdata"
 	"github.com/i0li/super_shiharai_kun/internal/usecase"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -31,13 +31,13 @@ func TestUserUsecase(t *testing.T) {
 		{
 			name: "create user success",
 			args: args{
-				corpName: "new corp",
-				userName: "new user",
-				email:    "new@example.com",
-				password: "newUserPassword",
+				corpName: testdata.Alice().CompanyName,
+				userName: testdata.Alice().Name,
+				email:    testdata.Alice().Email,
+				password: testdata.Alice().Password,
 			},
 			setupMock: func(m *mockrepo.MockUserRepository) {
-				m.EXPECT().FindByEmail("new@example.com").Return(nil, gorm.ErrRecordNotFound)
+				m.EXPECT().FindByEmail(testdata.Alice().Email).Return(nil, gorm.ErrRecordNotFound)
 				m.EXPECT().Create(gomock.Any()).Return(nil)
 			},
 			wantErr: nil,
@@ -45,19 +45,13 @@ func TestUserUsecase(t *testing.T) {
 		{
 			name: "deplicate email",
 			args: args{
-				corpName: "new corp",
-				userName: "new user",
-				email:    "existing@example.com",
-				password: "newUserPassword",
+				corpName: testdata.Tom().CompanyName,
+				userName: testdata.Tom().Name,
+				email:    testdata.Tom().Email,
+				password: testdata.Tom().Password,
 			},
 			setupMock: func(m *mockrepo.MockUserRepository) {
-				m.EXPECT().FindByEmail("existing@example.com").Return(&domain.User{
-					ID:          1,
-					CompanyName: "existing corp",
-					Name:        "existing user",
-					Email:       "existing@example.com",
-					Password:    "xxxxx",
-				}, nil)
+				m.EXPECT().FindByEmail(testdata.Tom().Email).Return(testdata.Tom(), nil)
 			},
 			wantErr: apperr.ErrEmailAlreadyExists,
 		},

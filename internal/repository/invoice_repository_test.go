@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/i0li/super_shiharai_kun/internal/repository"
-	"github.com/i0li/super_shiharai_kun/testdata"
+	"github.com/i0li/super_shiharai_kun/internal/testdata"
 	"github.com/stretchr/testify/require"
 )
 
