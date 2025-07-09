@@ -9,56 +9,74 @@ import (
 )
 
 func TestInvoice(t *testing.T) {
-	tests := []struct {
-		name          string
+	type args struct {
 		paymentAmount decimal.Decimal
 		feeRate       decimal.Decimal
 		taxRate       decimal.Decimal
-		expectedFee   decimal.Decimal
-		expectedTax   decimal.Decimal
-		expectedTotal decimal.Decimal
+	}
+	type want struct {
+		fee         decimal.Decimal
+		tax         decimal.Decimal
+		totalAmount decimal.Decimal
+	}
+	tests := []struct {
+		name string
+		args args
+		want want
 	}{
 		{
-			name:          "normal1",
-			paymentAmount: decimal.NewFromInt(10000),
-			feeRate:       decimal.NewFromFloat(0.04),
-			taxRate:       decimal.NewFromFloat(0.10),
-			expectedFee:   decimal.NewFromFloat(400.00),
-			expectedTax:   decimal.NewFromFloat(40.00),
-			expectedTotal: decimal.NewFromFloat(10440.00),
+			name: "normal",
+			args: args{
+				paymentAmount: decimal.NewFromInt(10000),
+				feeRate:       decimal.NewFromFloat(0.04),
+				taxRate:       decimal.NewFromFloat(0.10),
+			},
+			want: want{
+				fee:         decimal.NewFromFloat(400.00),
+				tax:         decimal.NewFromFloat(40.00),
+				totalAmount: decimal.NewFromFloat(10440.00),
+			},
 		},
 		{
-			name:          "normal2",
-			paymentAmount: decimal.NewFromInt(1234),
-			feeRate:       decimal.NewFromFloat(0.12),
-			taxRate:       decimal.NewFromFloat(0.08),
-			expectedFee:   decimal.RequireFromString("148.08"),    // 1234 × 0.12
-			expectedTax:   decimal.RequireFromString("11.8464"),   // 148.08 × 0.08
-			expectedTotal: decimal.RequireFromString("1393.9264"), // 1234 + 148.08 + 11.8464
+			name: "complex",
+			args: args{
+				paymentAmount: decimal.NewFromInt(123456789),
+				feeRate:       decimal.NewFromFloat(0.012345),
+				taxRate:       decimal.NewFromFloat(0.12345),
+			},
+			want: want{
+				fee:         decimal.NewFromInt(1524074),
+				tax:         decimal.NewFromInt(188146),
+				totalAmount: decimal.NewFromInt(125169009),
+			},
 		},
 		{
-			name:          "zero rates",
-			paymentAmount: decimal.NewFromInt(500),
-			feeRate:       decimal.NewFromFloat(0.00),
-			taxRate:       decimal.NewFromFloat(0.00),
-			expectedFee:   decimal.NewFromFloat(0.00),
-			expectedTax:   decimal.NewFromFloat(0.00),
-			expectedTotal: decimal.NewFromFloat(500.00),
+			name: "zero rates",
+			args: args{
+				paymentAmount: decimal.NewFromInt(500),
+				feeRate:       decimal.NewFromFloat(0.00),
+				taxRate:       decimal.NewFromFloat(0.00),
+			},
+			want: want{
+				fee:         decimal.NewFromFloat(0.00),
+				tax:         decimal.NewFromFloat(0.00),
+				totalAmount: decimal.NewFromFloat(500.00),
+			},
 		},
 	}
 
-	for _, tCase := range tests {
-		t.Run(tCase.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			invoice := &domain.Invoice{
-				PaymentAmount: tCase.paymentAmount,
-				FeeRate:       tCase.feeRate,
-				TaxRate:       tCase.taxRate,
+				PaymentAmount: tt.args.paymentAmount,
+				FeeRate:       tt.args.feeRate,
+				TaxRate:       tt.args.taxRate,
 			}
 			invoice.CalculateTotalAmount()
 
-			require.Equal(t, tCase.expectedFee.String(), invoice.Fee.String(), "Fee mismatch")
-			require.Equal(t, tCase.expectedTax.String(), invoice.TaxAmount.String(), "Tax mismatch")
-			require.Equal(t, tCase.expectedTotal.String(), invoice.TotalAmount.String(), "Total mismatch")
+			require.Equal(t, tt.want.fee.String(), invoice.Fee.String(), "Fee mismatch")
+			require.Equal(t, tt.want.tax.String(), invoice.TaxAmount.String(), "Tax mismatch")
+			require.Equal(t, tt.want.totalAmount.String(), invoice.TotalAmount.String(), "Total mismatch")
 		})
 	}
 }

@@ -22,8 +22,8 @@ type Invoice struct {
 }
 
 func (i *Invoice) CalculateTotalAmount() {
-	fee := i.PaymentAmount.Mul(i.FeeRate)
-	tax := fee.Mul(i.TaxRate)
+	fee := i.PaymentAmount.Mul(i.FeeRate).Floor()
+	tax := fee.Mul(i.TaxRate).Floor()
 	i.Fee = fee
 	i.TaxAmount = tax
 	i.TotalAmount = i.PaymentAmount.Add(fee).Add(tax)
